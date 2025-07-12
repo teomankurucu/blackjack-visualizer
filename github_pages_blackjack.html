@@ -1,0 +1,1331 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blackjack Visualizer - Adım Adım Analiz</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        
+        .header {
+            text-align: center;
+            padding: 40px 20px;
+            background: rgba(0,0,0,0.2);
+            backdrop-filter: blur(10px);
+        }
+        
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #ffd700, #ffed4e);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .input-section {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .input-section h2 {
+            color: #ffd700;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+        
+        textarea {
+            width: 100%;
+            height: 200px;
+            background: rgba(0,0,0,0.3);
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 10px;
+            padding: 15px;
+            color: white;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: vertical;
+            transition: border-color 0.3s ease;
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: #ffd700;
+        }
+        
+        .buttons {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+        
+        .btn {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(45deg, #2196F3, #1976D2);
+        }
+        
+        .btn-warning {
+            background: linear-gradient(45deg, #FF9800, #F57C00);
+        }
+        
+        .result-section {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            border: 1px solid rgba(255,255,255,0.2);
+            display: none;
+        }
+        
+        .timeline-container {
+            margin: 30px 0;
+        }
+        
+        .timeline-controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .timeline-btn {
+            background: rgba(255,255,255,0.2);
+            border: 2px solid rgba(255,215,0,0.5);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        
+        .timeline-btn:hover, .timeline-btn.active {
+            background: rgba(255,215,0,0.3);
+            border-color: #ffd700;
+            transform: scale(1.05);
+        }
+        
+        .timeline-step {
+            background: rgba(0,0,0,0.4);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 20px 0;
+            border-left: 5px solid #ffd700;
+            display: none;
+            animation: slideIn 0.5s ease-in-out;
+        }
+        
+        .timeline-step.active {
+            display: block;
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        .step-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .step-title {
+            font-size: 1.5rem;
+            color: #ffd700;
+            font-weight: bold;
+        }
+        
+        .step-time {
+            font-size: 14px;
+            color: #ccc;
+            background: rgba(255,255,255,0.1);
+            padding: 5px 12px;
+            border-radius: 15px;
+        }
+        
+        .step-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+        }
+        
+        .cards-section, .bets-section, .decision-section {
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 20px;
+        }
+        
+        .section-title {
+            font-size: 1.1rem;
+            color: #ffd700;
+            margin-bottom: 15px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .cards-display {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .card {
+            width: 60px;
+            height: 84px;
+            background: linear-gradient(145deg, #ffffff, #f0f0f0);
+            border: 2px solid #333;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: scale(1.1) rotate(5deg);
+        }
+        
+        .card.red {
+            color: #d32f2f;
+        }
+        
+        .card.new-card {
+            border-color: #ffd700;
+            box-shadow: 0 0 15px rgba(255,215,0,0.5);
+            animation: cardGlow 1s ease-in-out;
+        }
+        
+        @keyframes cardGlow {
+            0%, 100% { box-shadow: 0 0 15px rgba(255,215,0,0.5); }
+            50% { box-shadow: 0 0 25px rgba(255,215,0,0.8); }
+        }
+        
+        .card .suit {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            font-size: 12px;
+        }
+        
+        .card .value {
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        .hand-info {
+            text-align: center;
+            margin: 15px 0;
+        }
+        
+        .hand-score {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #ffd700;
+            margin: 10px 0;
+        }
+        
+        .hand-status {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            display: inline-block;
+        }
+        
+        .hand-status.win {
+            background: linear-gradient(45deg, #4caf50, #45a049);
+        }
+        
+        .hand-status.lose {
+            background: linear-gradient(45deg, #f44336, #d32f2f);
+        }
+        
+        .hand-status.active {
+            background: linear-gradient(45deg, #2196f3, #1976d2);
+        }
+        
+        .bet-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 10px 0;
+            padding: 10px 15px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+        }
+        
+        .bet-name {
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .bet-amount {
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+        }
+        
+        .bet-new {
+            border: 2px solid #ffd700;
+            animation: betHighlight 1s ease-in-out;
+        }
+        
+        @keyframes betHighlight {
+            0%, 100% { border-color: #ffd700; }
+            50% { border-color: #ffed4e; background: rgba(255,215,0,0.1); }
+        }
+        
+        .bet-win {
+            color: #4caf50;
+        }
+        
+        .bet-lose {
+            color: #f44336;
+        }
+        
+        .decision-details {
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        
+        .decision-action {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #ffd700;
+            margin-bottom: 10px;
+        }
+        
+        .decision-explanation {
+            font-size: 14px;
+            color: #ccc;
+            line-height: 1.5;
+        }
+        
+        .side-bet-result {
+            margin: 10px 0;
+            padding: 12px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+        }
+        
+        .side-bet-name {
+            font-weight: bold;
+            color: #ffd700;
+            margin-bottom: 5px;
+        }
+        
+        .side-bet-outcome {
+            font-size: 14px;
+        }
+        
+        .side-bet-cards {
+            display: flex;
+            gap: 5px;
+            margin: 8px 0;
+            justify-content: center;
+        }
+        
+        .side-bet-cards .card {
+            width: 40px;
+            height: 56px;
+            font-size: 12px;
+        }
+        
+        .combination-badge {
+            background: #ffd700;
+            color: #333;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            margin: 5px 0;
+            display: inline-block;
+        }
+        
+        .error, .success, .loading {
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: none;
+        }
+        
+        .error {
+            background: linear-gradient(45deg, #f44336, #d32f2f);
+            color: white;
+        }
+        
+        .success {
+            background: linear-gradient(45deg, #4caf50, #45a049);
+            color: white;
+        }
+        
+        .loading {
+            background: rgba(0,0,0,0.3);
+            text-align: center;
+            padding: 40px;
+            color: white;
+        }
+        
+        .spinner {
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top: 4px solid #ffd700;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .summary-section {
+            background: rgba(0,0,0,0.4);
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 30px;
+            border: 2px solid rgba(255,215,0,0.3);
+        }
+        
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .summary-item {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        
+        .summary-label {
+            font-size: 14px;
+            color: #ccc;
+            margin-bottom: 8px;
+        }
+        
+        .summary-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #ffd700;
+        }
+        
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .container {
+                padding: 10px;
+            }
+            
+            .step-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .timeline-controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .card {
+                width: 50px;
+                height: 70px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎲 Blackjack Timeline Analyzer</h1>
+        <p>Her hamleyi adım adım, detaylı olarak analiz edin</p>
+    </div>
+    
+    <div class="container">
+        <div class="input-section">
+            <h2>📋 JSON Verinizi Yapıştırın</h2>
+            <textarea 
+                id="jsonInput" 
+                placeholder='{"uuid": "...", "data": {"gameProvider": "evolution", "gameType": "blackjack", ...}}'
+            ></textarea>
+            <div class="buttons">
+                <button class="btn" onclick="analyzeGame()">🎯 Timeline Analizi</button>
+                <button class="btn btn-secondary" onclick="loadExample()">📝 Örnek Yükle</button>
+                <button class="btn btn-warning" onclick="clearAll()">🗑️ Temizle</button>
+            </div>
+        </div>
+        
+        <div class="error" id="errorMessage"></div>
+        <div class="success" id="successMessage"></div>
+        
+        <div class="loading" id="loadingMessage">
+            <div class="spinner"></div>
+            <p>Oyun timeline'ı analiz ediliyor...</p>
+        </div>
+        
+        <div class="result-section" id="resultSection">
+            <h2>📊 Adım Adım Oyun Analizi</h2>
+            
+            <div class="timeline-container">
+                <div class="timeline-controls" id="timelineControls">
+                    <!-- Timeline butonları buraya gelecek -->
+                </div>
+                
+                <div id="timelineSteps">
+                    <!-- Timeline adımları buraya gelecek -->
+                </div>
+            </div>
+            
+            <div class="summary-section" id="gameSummary">
+                <!-- Oyun özeti buraya gelecek -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let gameTimeline = [];
+        let currentStep = 0;
+
+        // Örnek JSON verisi
+        const exampleJSON = {
+            "uuid": "ee6e8b46-a2b2-48ee-88b1-71931a8fa6cf",
+            "timestamp": "2025-07-12T13:49:41.630043767",
+            "data": {
+                "id": "18516c9cf9d727c96d172296",
+                "gameProvider": "evolution",
+                "gameSubProvider": "evolution",
+                "startedAt": "2025-07-12T06:19:17.819Z",
+                "settledAt": "2025-07-12T06:19:54.863Z",
+                "status": "Resolved",
+                "gameType": "blackjack",
+                "table": {
+                    "id": "rar7lfdoszipwstj",
+                    "name": "GT Blackjack 2"
+                },
+                "dealer": {
+                    "uid": "tts186138_______",
+                    "name": "Arnas"
+                },
+                "currency": "EUR",
+                "participants": [{
+                    "casinoId": "gtec3cw000000001",
+                    "playerId": "12554308",
+                    "screenName": "CoseqaeiS",
+                    "currency": "TRY",
+                    "bets": [
+                        {
+                            "code": "BJ_213Seat1",
+                            "stake": 400,
+                            "payout": 0,
+                            "placedOn": "2025-07-12T06:19:20.485Z"
+                        },
+                        {
+                            "code": "BJ_PerfectPairSeat1",
+                            "stake": 400,
+                            "payout": 0,
+                            "placedOn": "2025-07-12T06:19:20.485Z"
+                        },
+                        {
+                            "code": "BJ_PlaySeat1",
+                            "stake": 5200,
+                            "payout": 10400,
+                            "placedOn": "2025-07-12T06:19:20.485Z"
+                        },
+                        {
+                            "code": "BJ_DoubleDownSeat1",
+                            "stake": 5200,
+                            "payout": 10400,
+                            "placedOn": "2025-07-12T06:19:32.082Z"
+                        }
+                    ],
+                    "seats": {
+                        "Seat1": {
+                            "sideBet21p3": {
+                                "result": "Lose",
+                                "score": 15,
+                                "cards": ["4D", "9S", "2H"],
+                                "combination": "BJ_NONE"
+                            },
+                            "sideBetPerfectPair": {
+                                "result": "Lose",
+                                "score": 11,
+                                "cards": ["9S", "2H"],
+                                "combination": "BJ_NONE"
+                            },
+                            "insurance": false,
+                            "doubleDown": true,
+                            "splitHand": false
+                        }
+                    }
+                }],
+                "result": {
+                    "dealer": {
+                        "score": 23,
+                        "cards": ["4D", "AD", "TD", "8C"],
+                        "isBlackjack": false
+                    },
+                    "seats": {
+                        "Seat1": {
+                            "decisions": [
+                                {
+                                    "recordedAt": "2025-07-12T06:19:32.238Z",
+                                    "type": "DoubleDown"
+                                }
+                            ],
+                            "score": 15,
+                            "outcome": "Win",
+                            "cards": ["9S", "2H", "4S"]
+                        }
+                    }
+                },
+                "wager": 476.43,
+                "payout": 884.80
+            }
+        };
+
+        function showMessage(type, message) {
+            const errorEl = document.getElementById('errorMessage');
+            const successEl = document.getElementById('successMessage');
+            
+            errorEl.style.display = 'none';
+            successEl.style.display = 'none';
+            
+            if (type === 'error') {
+                errorEl.textContent = message;
+                errorEl.style.display = 'block';
+            } else {
+                successEl.textContent = message;
+                successEl.style.display = 'block';
+            }
+            
+            setTimeout(() => {
+                errorEl.style.display = 'none';
+                successEl.style.display = 'none';
+            }, 5000);
+        }
+
+        function parseCard(cardCode) {
+            const value = cardCode.slice(0, -1);
+            const suit = cardCode.slice(-1);
+            const suitMap = { 'S': '♠', 'H': '♥', 'D': '♦', 'C': '♣' };
+            const isRed = suit === 'H' || suit === 'D';
+            return { 
+                value: value === 'T' ? '10' : value, 
+                suit: suitMap[suit] || '?', 
+                isRed,
+                code: cardCode
+            };
+        }
+
+        function calculateHandValue(cards) {
+            let value = 0;
+            let aces = 0;
+            
+            cards.forEach(card => {
+                const cardValue = card.value;
+                if (cardValue === 'A') {
+                    aces++;
+                    value += 11;
+                } else if (['K', 'Q', 'J'].includes(cardValue)) {
+                    value += 10;
+                } else {
+                    value += parseInt(cardValue);
+                }
+            });
+            
+            while (value > 21 && aces > 0) {
+                value -= 10;
+                aces--;
+            }
+            
+            return value;
+        }
+
+        function createGameTimeline(data) {
+            const timeline = [];
+            const participant = data.participants[0];
+            const seats = data.result.seats;
+            
+            // 1. İlk bahisler
+            const initialBets = participant.bets.filter(bet => 
+                new Date(bet.placedOn).getTime() === new Date(participant.bets[0].placedOn).getTime()
+            );
+            
+            timeline.push({
+                step: 1,
+                title: "🎯 İlk Bahisler",
+                time: participant.bets[0].placedOn,
+                type: "initial_bets",
+                bets: initialBets,
+                description: "Oyuncu başlangıç bahislerini yerleştirdi"
+            });
+
+            // 2. İlk kartlar
+            Object.entries(seats).forEach(([seatName, seatData]) => {
+                if (seatData.cards && seatData.cards.length >= 2) {
+                    const initialCards = seatData.cards.slice(0, 2).map(parseCard);
+                    timeline.push({
+                        step: timeline.length + 1,
+                        title: `🃏 ${seatName} - İlk Kartlar`,
+                        time: data.startedAt,
+                        type: "initial_cards",
+                        seat: seatName,
+                        cards: initialCards,
+                        score: calculateHandValue(initialCards),
+                        description: `${seatName} için ilk iki kart dağıtıldı`
+                    });
+                }
+            });
+
+            // 3. Dealer'ın ilk kartı
+            if (data.result.dealer.cards && data.result.dealer.cards.length > 0) {
+                timeline.push({
+                    step: timeline.length + 1,
+                    title: "🎩 Dealer'ın İlk Kartı",
+                    time: data.startedAt,
+                    type: "dealer_first_card",
+                    cards: [parseCard(data.result.dealer.cards[0])],
+                    description: "Dealer'ın açık kartı gösterildi"
+                });
+            }
+
+            // 4. Yan bahis sonuçları
+            if (participant.seats) {
+                Object.entries(participant.seats).forEach(([seatName, seatInfo]) => {
+                    if (seatInfo.sideBet21p3 || seatInfo.sideBetPerfectPair) {
+                        timeline.push({
+                            step: timeline.length + 1,
+                            title: `🎰 ${seatName} - Yan Bahis Sonuçları`,
+                            time: data.startedAt,
+                            type: "side_bets",
+                            seat: seatName,
+                            sideBets: {
+                                bet21p3: seatInfo.sideBet21p3,
+                                perfectPair: seatInfo.sideBetPerfectPair
+                            },
+                            description: "Yan bahis sonuçları belirlendi"
+                        });
+                    }
+                });
+            }
+
+            // 5. Oyuncu kararları ve ek kartlar
+            Object.entries(seats).forEach(([seatName, seatData]) => {
+                if (seatData.decisions) {
+                    seatData.decisions.forEach((decision, index) => {
+                        const stepData = {
+                            step: timeline.length + 1,
+                            title: `🎯 ${seatName} - ${decision.type}`,
+                            time: decision.recordedAt,
+                            type: "player_decision",
+                            seat: seatName,
+                            decision: decision.type,
+                            description: getDecisionDescription(decision.type, seatName)
+                        };
+
+                        // Kart ekleniyorsa
+                        if (decision.type === "Hit" || decision.type === "DoubleDown") {
+                            const cardIndex = 2 + index; // İlk iki kart + decision indexi
+                            if (seatData.cards[cardIndex]) {
+                                stepData.newCard = parseCard(seatData.cards[cardIndex]);
+                                stepData.allCards = seatData.cards.slice(0, cardIndex + 1).map(parseCard);
+                                stepData.score = calculateHandValue(stepData.allCards);
+                            }
+                        }
+
+                        // Double Down bahisi
+                        if (decision.type === "DoubleDown") {
+                            const ddBet = participant.bets.find(bet => 
+                                bet.code.includes("DoubleDown") && 
+                                bet.code.includes(seatName.replace("Seat", "Seat"))
+                            );
+                            if (ddBet) {
+                                stepData.newBet = ddBet;
+                            }
+                        }
+
+                        // Split durumu
+                        if (decision.type === "Split") {
+                            stepData.splitCards = {
+                                hand1: [parseCard(seatData.cards[0])],
+                                hand2: [parseCard(seatData.cards[1])]
+                            };
+                        }
+
+                        timeline.push(stepData);
+                    });
+                }
+            });
+
+            // 6. Dealer'ın kalan kartları
+            if (data.result.dealer.cards.length > 1) {
+                timeline.push({
+                    step: timeline.length + 1,
+                    title: "🎩 Dealer'ın Kalan Kartları",
+                    time: data.settledAt,
+                    type: "dealer_complete",
+                    cards: data.result.dealer.cards.map(parseCard),
+                    score: data.result.dealer.score,
+                    isBust: data.result.dealer.score > 21,
+                    description: "Dealer kartlarını tamamladı"
+                });
+            }
+
+            // 7. Final sonuçlar
+            timeline.push({
+                step: timeline.length + 1,
+                title: "🏆 Final Sonuçlar",
+                time: data.settledAt,
+                type: "final_results",
+                results: seats,
+                totalWager: data.wager,
+                totalPayout: data.payout,
+                netResult: data.payout - data.wager,
+                description: "Oyun tamamlandı ve sonuçlar belirlendi"
+            });
+
+            // Zaman sırasına göre sırala
+            return timeline.sort((a, b) => new Date(a.time) - new Date(b.time));
+        }
+
+        function getDecisionDescription(decisionType, seatName) {
+            const descriptions = {
+                "Hit": `${seatName} bir kart daha istedi`,
+                "Stand": `${seatName} kartlarında kaldı`,
+                "DoubleDown": `${seatName} bahsini ikiye katladı ve son kartını aldı`,
+                "Split": `${seatName} elini ikiye böldü`,
+                "Insurance": `${seatName} sigorta bahsi yaptı`
+            };
+            return descriptions[decisionType] || `${seatName} ${decisionType} kararı verdi`;
+        }
+
+        function renderCard(card, isNew = false) {
+            return `
+                <div class="card ${card.isRed ? 'red' : ''} ${isNew ? 'new-card' : ''}">
+                    <div class="suit">${card.suit}</div>
+                    <div class="value">${card.value}</div>
+                </div>
+            `;
+        }
+
+        function renderBet(bet, isNew = false) {
+            const betName = getBetName(bet.code);
+            const isWin = bet.payout > bet.stake;
+            return `
+                <div class="bet-item ${isNew ? 'bet-new' : ''}">
+                    <div class="bet-name">${betName}</div>
+                    <div class="bet-amount ${isWin ? 'bet-win' : 'bet-lose'}">
+                        ${bet.stake} → ${bet.payout} TRY
+                    </div>
+                </div>
+            `;
+        }
+
+        function getBetName(betCode) {
+            const betNames = {
+                'BJ_213Seat1': '21+3 Seat 1',
+                'BJ_213Seat2': '21+3 Seat 2',
+                'BJ_PerfectPairSeat1': 'Perfect Pair Seat 1',
+                'BJ_PerfectPairSeat2': 'Perfect Pair Seat 2',
+                'BJ_PlaySeat1': 'Ana Bahis Seat 1',
+                'BJ_PlaySeat2': 'Ana Bahis Seat 2',
+                'BJ_DoubleDownSeat1': 'Double Down Seat 1',
+                'BJ_DoubleDownSeat2': 'Double Down Seat 2',
+                'BJ_SplitSeat1': 'Split Seat 1'
+            };
+            return betNames[betCode] || betCode.replace('BJ_', '').replace('Seat', ' Seat ');
+        }
+
+        function getCombinationText(combination) {
+            const combinations = {
+                'BJ_NONE': 'Kombinasyon Yok',
+                'BJ_PAIR': 'Çift (6:1)',
+                'BJ_FLUSH': 'Flush (5:1)',
+                'BJ_STRAIGHT': 'Straight (10:1)',
+                'BJ_THREE_OF_A_KIND': 'Üçlü (30:1)',
+                'BJ_STRAIGHT_FLUSH': 'Straight Flush (40:1)',
+                'BJ_SUITED_TRIPLE': 'Suited Triple (100:1)'
+            };
+            return combinations[combination] || combination;
+        }
+
+        function renderTimelineStep(stepData, index) {
+            const timeStr = new Date(stepData.time).toLocaleTimeString('tr-TR');
+            
+            let content = '';
+            
+            switch (stepData.type) {
+                case 'initial_bets':
+                    content = `
+                        <div class="step-content">
+                            <div class="bets-section">
+                                <div class="section-title">💰 Yerleştirilen Bahisler</div>
+                                ${stepData.bets.map(bet => renderBet(bet, true)).join('')}
+                                <div style="margin-top: 15px; padding: 10px; background: rgba(255,215,0,0.1); border-radius: 8px;">
+                                    <strong>Toplam Bahis: ${stepData.bets.reduce((sum, bet) => sum + bet.stake, 0)} TRY</strong>
+                                </div>
+                            </div>
+                            <div class="decision-section">
+                                <div class="section-title">🎯 Bahis Stratejisi</div>
+                                <div class="decision-details">
+                                    <div class="decision-explanation">
+                                        Oyuncu ${stepData.bets.length} farklı bahis türü seçti:<br>
+                                        ${stepData.bets.map(bet => `• ${getBetName(bet.code)}: ${bet.stake} TRY`).join('<br>')}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    break;
+
+                case 'initial_cards':
+                    content = `
+                        <div class="step-content">
+                            <div class="cards-section">
+                                <div class="section-title">🃏 ${stepData.seat} Kartları</div>
+                                <div class="cards-display">
+                                    ${stepData.cards.map(card => renderCard(card, true)).join('')}
+                                </div>
+                                <div class="hand-info">
+                                    <div class="hand-score">Skor: ${stepData.score}</div>
+                                    <div class="hand-status active">Aktif El</div>
+                                </div>
+                            </div>
+                            <div class="decision-section">
+                                <div class="section-title">📊 El Analizi</div>
+                                <div class="decision-details">
+                                    <div class="decision-explanation">
+                                        İlk iki kart: ${stepData.cards.map(c => c.value + c.suit).join(', ')}<br>
+                                        Toplam değer: ${stepData.score}<br>
+                                        ${stepData.score === 21 ? '🎉 BLACKJACK!' : 
+                                          stepData.score >= 17 ? '🎯 Güçlü el' :
+                                          stepData.score >= 12 ? '⚖️ Orta el' : '⚠️ Zayıf el'}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    break;
+
+                case 'dealer_first_card':
+                    content = `
+                        <div class="step-content">
+                            <div class="cards-section">
+                                <div class="section-title">🎩 Dealer'ın Açık Kartı</div>
+                                <div class="cards-display">
+                                    ${renderCard(stepData.cards[0], true)}
+                                    <div class="card" style="background: #333; color: #666;">
+                                        <div class="value">?</div>
+                                    </div>
+                                </div>
+                                <div class="hand-info">
+                                    <div class="hand-score">Açık Kart: ${stepData.cards[0].value}${stepData.cards[0].suit}</div>
+                                </div>
+                            </div>
+                            <div class="decision-section">
+                                <div class="section-title">🎯 Dealer Analizi</div>
+                                <div class="decision-details">
+                                    <div class="decision-explanation">
+                                        Dealer'ın açık kartı: ${stepData.cards[0].value}${stepData.cards[0].suit}<br>
+                                        ${['A', 'K', 'Q', 'J', '10'].includes(stepData.cards[0].value) ? 
+                                          '⚠️ Güçlü dealer kartı - Dikkatli oyna!' :
+                                          ['2', '3', '4', '5', '6'].includes(stepData.cards[0].value) ?
+                                          '😊 Zayıf dealer kartı - Avantaj sizde!' :
+                                          '⚖️ Orta dealer kartı - Dikkatli ol!'}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    break;
+
+                case 'side_bets':
+                    content = `
+                        <div class="step-content">
+                            <div class="cards-section">
+                                <div class="section-title">🎰 Yan Bahis Sonuçları</div>
+                                ${stepData.sideBets.perfectPair ? `
+                                    <div class="side-bet-result">
+                                        <div class="side-bet-name">Perfect Pair</div>
+                                        <div class="side-bet-cards">
+                                            ${stepData.sideBets.perfectPair.cards.map(card => renderCard(parseCard(card))).join('')}
+                                        </div>
+                                        <div class="side-bet-outcome ${stepData.sideBets.perfectPair.result.toLowerCase()}">
+                                            ${stepData.sideBets.perfectPair.result === 'Win' ? '🎯 KAZANÇ' : '❌ KAYIP'}
+                                        </div>
+                                        <div class="combination-badge">
+                                            ${getCombinationText(stepData.sideBets.perfectPair.combination)}
+                                        </div>
+                                    </div>
+                                ` : ''}
+                                
+                                ${stepData.sideBets.bet21p3 ? `
+                                    <div class="side-bet-result">
+                                        <div class="side-bet-name">21+3</div>
+                                        <div class="side-bet-cards">
+                                            ${stepData.sideBets.bet21p3.cards.map(card => renderCard(parseCard(card))).join('')}
+                                        </div>
+                                        <div class="side-bet-outcome ${stepData.sideBets.bet21p3.result.toLowerCase()}">
+                                            ${stepData.sideBets.bet21p3.result === 'Win' ? '🎯 KAZANÇ' : '❌ KAYIP'}
+                                        </div>
+                                        <div class="combination-badge">
+                                            ${getCombinationText(stepData.sideBets.bet21p3.combination)}
+                                        </div>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                    break;
+
+                case 'player_decision':
+                    content = `
+                        <div class="step-content">
+                            <div class="cards-section">
+                                <div class="section-title">🃏 ${stepData.seat} Kartları</div>
+                                <div class="cards-display">
+                                    ${stepData.allCards ? stepData.allCards.map((card, idx) => 
+                                        renderCard(card, idx === stepData.allCards.length - 1 && stepData.newCard)
+                                    ).join('') : ''}
+                                </div>
+                                <div class="hand-info">
+                                    ${stepData.score ? `<div class="hand-score">Skor: ${stepData.score}</div>` : ''}
+                                    ${stepData.score > 21 ? '<div class="hand-status lose">BUST!</div>' : 
+                                      stepData.score === 21 ? '<div class="hand-status win">21!</div>' :
+                                      '<div class="hand-status active">Devam</div>'}
+                                </div>
+                            </div>
+                            
+                            <div class="decision-section">
+                                <div class="section-title">🎯 Oyuncu Kararı</div>
+                                <div class="decision-details">
+                                    <div class="decision-action">${stepData.decision}</div>
+                                    <div class="decision-explanation">
+                                        ${stepData.description}<br>
+                                        ${stepData.newCard ? `Gelen kart: ${stepData.newCard.value}${stepData.newCard.suit}<br>` : ''}
+                                        ${getDecisionAnalysis(stepData.decision, stepData.score, stepData.newCard)}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            ${stepData.newBet ? `
+                                <div class="bets-section">
+                                    <div class="section-title">💰 Ek Bahis</div>
+                                    ${renderBet(stepData.newBet, true)}
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                    break;
+
+                case 'dealer_complete':
+                    content = `
+                        <div class="step-content">
+                            <div class="cards-section">
+                                <div class="section-title">🎩 Dealer'ın Tüm Kartları</div>
+                                <div class="cards-display">
+                                    ${stepData.cards.map((card, idx) => renderCard(card, idx > 0)).join('')}
+                                </div>
+                                <div class="hand-info">
+                                    <div class="hand-score">Final Skor: ${stepData.score}</div>
+                                    <div class="hand-status ${stepData.isBust ? 'lose' : 'win'}">
+                                        ${stepData.isBust ? '💥 DEALER BUST!' : '🎯 DEALER STAND'}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="decision-section">
+                                <div class="section-title">📊 Dealer Analizi</div>
+                                <div class="decision-details">
+                                    <div class="decision-explanation">
+                                        Dealer'ın final kartları: ${stepData.cards.map(c => c.value + c.suit).join(', ')}<br>
+                                        Toplam: ${stepData.score}<br>
+                                        ${stepData.isBust ? '🎉 Dealer bust oldu - Tüm aktif eller kazandı!' : 
+                                          '⚖️ Dealer stand - El karşılaştırması yapılacak'}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    break;
+
+                case 'final_results':
+                    const netProfit = stepData.netResult > 0;
+                    content = `
+                        <div class="step-content">
+                            <div class="cards-section">
+                                <div class="section-title">🏆 Final Sonuçlar</div>
+                                ${Object.entries(stepData.results).map(([seatName, result]) => `
+                                    <div class="side-bet-result">
+                                        <div class="side-bet-name">${seatName}</div>
+                                        <div class="side-bet-cards">
+                                            ${result.cards.map(card => renderCard(parseCard(card))).join('')}
+                                        </div>
+                                        <div class="side-bet-outcome ${result.outcome.toLowerCase()}">
+                                            Skor: ${result.score} - ${result.outcome === 'Win' ? '🎉 KAZANÇ' : 
+                                                                    result.outcome === 'Lost' ? '❌ KAYIP' : 
+                                                                    result.outcome === 'Push' ? '🤝 BERABERE' : result.outcome}
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            
+                            <div class="bets-section">
+                                <div class="section-title">💰 Mali Sonuç</div>
+                                <div class="bet-item">
+                                    <div class="bet-name">Toplam Bahis</div>
+                                    <div class="bet-amount">${stepData.totalWager.toFixed(2)} EUR</div>
+                                </div>
+                                <div class="bet-item">
+                                    <div class="bet-name">Toplam Kazanç</div>
+                                    <div class="bet-amount bet-win">${stepData.totalPayout.toFixed(2)} EUR</div>
+                                </div>
+                                <div class="bet-item" style="border-top: 2px solid #ffd700; margin-top: 10px; padding-top: 15px;">
+                                    <div class="bet-name">Net Sonuç</div>
+                                    <div class="bet-amount ${netProfit ? 'bet-win' : 'bet-lose'}">
+                                        ${netProfit ? '+' : ''}${stepData.netResult.toFixed(2)} EUR
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="decision-section">
+                                <div class="section-title">📊 Oyun Özeti</div>
+                                <div class="decision-details">
+                                    <div class="decision-explanation">
+                                        ${netProfit ? '🎉 Tebrikler! Karlı bir oyun oldu.' : '😔 Bu sefer şans yaver gitmedi.'}<br>
+                                        Kazanç oranı: ${((stepData.totalPayout / stepData.totalWager) * 100).toFixed(1)}%<br>
+                                        ${getGameSummary(stepData.results)}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    break;
+            }
+
+            return `
+                <div class="timeline-step" data-step="${index}">
+                    <div class="step-header">
+                        <div class="step-title">${stepData.step}. ${stepData.title}</div>
+                        <div class="step-time">⏰ ${timeStr}</div>
+                    </div>
+                    ${content}
+                </div>
+            `;
+        }
+
+        function getDecisionAnalysis(decision, score, newCard) {
+            switch (decision) {
+                case 'Hit':
+                    if (newCard && score > 21) {
+                        return '💥 Maalesef bust oldunuz!';
+                    } else if (newCard && score === 21) {
+                        return '🎯 Mükemmel! 21 yaptınız!';
+                    } else {
+                        return '👍 Ek kart alma kararı - Risk almaya devam';
+                    }
+                case 'Stand':
+                    return score >= 17 ? '🎯 İyi karar - Güvenli skorla durma' : '⚠️ Düşük skorla durma - Riskli karar';
+                case 'DoubleDown':
+                    return newCard && score > 21 ? '😔 Double down sonrası bust' : 
+                           newCard && score === 21 ? '🎉 Mükemmel double down!' :
+                           '💪 Agresif strateji - Bahsi ikiye katlama';
+                case 'Split':
+                    return '✂️ Çift kartları ayırma - İki ayrı el oynama';
+                default:
+                    return `${decision} kararı alındı`;
+            }
+        }
+
+        function getGameSummary(results) {
+            const wins = Object.values(results).filter(r => r.outcome === 'Win').length;
+            const total = Object.values(results).length;
+            return `${wins}/${total} el kazanıldı (${((wins/total)*100).toFixed(0)}% başarı)`;
+        }
+
+        function showTimelineStep(stepIndex) {
+            document.querySelectorAll('.timeline-step').forEach(step => {
+                step.classList.remove('active');
+            });
+            
+            document.querySelectorAll('.timeline-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            const targetStep = document.querySelector(`[data-step="${stepIndex}"]`);
+            const targetBtn = document.querySelector(`[data-step-btn="${stepIndex}"]`);
+            
+            if (targetStep) {
+                targetStep.classList.add('active');
+                targetStep.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            
+            if (targetBtn) {
+                targetBtn.classList.add('active');
+            }
+            
+            currentStep = stepIndex;
+        }
+
+        function renderTimeline(timeline) {
+            const controlsContainer = document.getElementById('timelineControls');
+            const stepsContainer = document.getElementById('timelineSteps');
+            
+            // Timeline kontrol butonları
+            controlsContainer.innerHTML = timeline.map((step, index) => `
+                <button class="timeline-btn ${index === 0 ? 'active' : ''}" 
+                        data-step-btn="${index}" 
+                        onclick="showTimelineStep(${index})">
+                    ${step.step}. ${step.title.replace(/🎯|🃏|🎩|🎰|🏆|💰/g, '')}
+                </button>
+            `).join('');
+            
+            // Timeline adımları
+            stepsContainer.innerHTML = timeline.map((step, index) => 
+                renderTimelineStep(step, index)
+            ).join('');
+            
+            // İlk adımı göster
+            showTimelineStep(0);
+        }
+
+        function analyzeGame() {
+            const jsonInput = document.getElementById('jsonInput').value.trim();
+            const loadingEl = document.getElementById('loadingMessage');
+            const resultEl = document.getElementById('resultSection');
+            
+            if (!jsonInput) {
+                showMessage('error', 'Lütfen JSON verinizi yapıştırın!');
+                return;
+            }
+            
+            loadingEl.style.display = 'block';
+            resultEl.style.display = 'none';
+            
+            setTimeout(() => {
+                try {
+                    const jsonData = JSON.parse(jsonInput);
+                    
+                    if (!jsonData.data || !jsonData.data.gameProvider || !jsonData.data.gameType) {
+                        throw new Error('Geçersiz JSON formatı');
+                    }
+                    
+                    if (jsonData.data.gameProvider !== 'evolution' || jsonData.data.gameType !== 'blackjack') {
+                        throw new Error('Sadece Evolution Gaming Blackjack oyunları desteklenmektedir');
+                    }
+                    
+                    gameTimeline = createGameTimeline(jsonData.data);
+                    renderTimeline(gameTimeline);
+                    
+                    loadingEl.style.display = 'none';
+                    resultEl.style.display = 'block';
+                    
+                    resultEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    
+                    showMessage('success', '🎉 Oyun timeline analizi tamamlandı! Her adımı inceleyebilirsiniz.');
+                    
+                } catch (error) {
+                    loadingEl.style.display = 'none';
+                    showMessage('error', `❌ Hata: ${error.message}`);
+                }
+            }, 2000);
+        }
+
+        function loadExample() {
+            document.getElementById('jsonInput').value = JSON.stringify(exampleJSON, null, 2);
+            showMessage('success', '📝 Örnek JSON yüklendi! "Timeline Analizi" butonuna tıklayın.');
+        }
+
+        function clearAll() {
+            document.getElementById('jsonInput').value = '';
+            document.getElementById('resultSection').style.display = 'none';
+            gameTimeline = [];
+            currentStep = 0;
+            showMessage('success', '🗑️ Tüm veriler temizlendi.');
+        }
+
+        // Klavye kısayolları
+        document.addEventListener('keydown', function(event) {
+            if (event.ctrlKey && event.key === 'Enter') {
+                analyzeGame();
+            }
+            
+            if (gameTimeline.length > 0) {
+                if (event.key === 'ArrowLeft' && currentStep > 0) {
+                    showTimelineStep(currentStep - 1);
+                } else if (event.key === 'ArrowRight' && currentStep < gameTimeline.length - 1) {
+                    showTimelineStep(currentStep + 1);
+                }
+            }
+        });
+
+        // Auto-resize textarea
+        document.getElementById('jsonInput').addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 400) + 'px';
+        });
+    </script>
+</body>
+</html>
